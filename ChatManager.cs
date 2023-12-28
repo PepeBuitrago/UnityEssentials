@@ -13,17 +13,11 @@ public class ChatManager : NetworkBehaviour
 
     private readonly List<GameObject> messages = new List<GameObject>();
 
-    // Array de palabras censurables
-    string[] palabrasCensurables = {
-            "palabra1",
-            "palabra2",
-            "palabra3",
-            // Agrega más palabras censurables aquí
-        };
-
+    AdminManager Admin;
 
     void Start()
     {
+        Admin = GetComponent<AdminManager>();
         chatPanel = GameObject.Find("Content");
         chatInput = GameObject.Find("InputField").GetComponent<TMP_InputField>();
     }
@@ -85,7 +79,8 @@ public class ChatManager : NetworkBehaviour
 
     private void ProcessChatCommand(string message)
     {
-        List<string> palabrasEncontradas = ContienePalabrasCensurables(message, palabrasCensurables);
+        List<string> palabrasEncontradas = ContienePalabrasCensurables(message, WordsClass.forbiddenWords);
+        string words = "";
 
         if (palabrasEncontradas.Count == 0)
         {
@@ -166,6 +161,12 @@ public class ChatManager : NetworkBehaviour
         else
         {
             AddMessageToChat("<color=red>No puedes usar ese vocabulario.</color>");
+            
+            foreach(string word in palabrasEncontradas)
+            {
+                words = words + " " + word;
+            }
+            Debug.Log($"El jugador {netId} ha usado:  {words} | Mensaje: {message}");
         }
     }
 }
