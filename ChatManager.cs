@@ -12,14 +12,20 @@ public class ChatManager : NetworkBehaviour
     public TMP_InputField chatInput;
 
     private readonly List<GameObject> messages = new List<GameObject>();
+    public PlayerController player;
 
-    AdminManager Admin;
-
-    void Start()
+    void Awake()
     {
-        Admin = GetComponent<AdminManager>();
-        chatPanel = GameObject.Find("Content");
-        chatInput = GameObject.Find("InputField").GetComponent<TMP_InputField>();
+        player = GetComponent<PlayerController>();
+        //if (isLocalPlayer)  SetupGUI();//Si se ejecuta dentro de la comprobacion isLocalPlayer crashea
+        
+    }
+    private void Start()
+    {
+        if (isLocalPlayer)
+        {
+            //CmdSendChatMessage($"<color=red>Bienvenido {player.namePlayer}.</color>", player.namePlayer);
+        }
     }
 
     private void Update()
@@ -35,11 +41,18 @@ public class ChatManager : NetworkBehaviour
         }
     }
 
+
+    public void SetupGUI()
+    {
+        chatPanel = GameObject.Find("ContentChat");
+        chatInput = GameObject.Find("InputFieldChat").GetComponent<TMP_InputField>();
+    }
+
     [Command]
-    private void CmdSendChatMessage(string message, ulong id)
+    private void CmdSendChatMessage(string message, string name)
     {
         RpcReceiveChatMessage(message);
-        LogSystem.LogMessage($"{id}", message, "LogChat.txt");
+        LogSystem.LogMessage($"{name}", message, "LogChat.txt");
     }
 
     [ClientRpc]
@@ -61,8 +74,8 @@ public class ChatManager : NetworkBehaviour
         messages.Add(newText);
     }
 
-    // Funci髇 para verificar si un mensaje contiene palabras censurables y obtener las palabras censurables encontradas
-    static List<string> ContienePalabrasCensurables(string mensaje, string[] palabrasCensurables)
+    // Funci贸n para verificar si un mensaje contiene palabras censurables y obtener las palabras censurables encontradas
+    static List<string> ContainsForbiddenWords(string mensaje, string[] palabrasCensurables)
     {
         List<string> palabrasEncontradas = new List<string>();
 
@@ -79,7 +92,7 @@ public class ChatManager : NetworkBehaviour
 
     private void ProcessChatCommand(string message)
     {
-        List<string> palabrasEncontradas = ContienePalabrasCensurables(message, WordsClass.forbiddenWords);
+        List<string> palabrasEncontradas = ContainsForbiddenWords(message, WordsClass.forbiddenWords);
         string words = "";
 
         if (palabrasEncontradas.Count == 0)
@@ -92,10 +105,10 @@ public class ChatManager : NetworkBehaviour
                 // Dividimos el mensaje en partes separadas por espacios
                 string[] parts = command.Split(' ');
 
-                // El primer elemento despu閟 de "cmd/" es el comando
+                // El primer elemento despu茅s de "cmd/" es el comando
                 string cmd = parts[0];
 
-                // Dependiendo del comando, ejecutar la l骻ica correspondiente
+                // Dependiendo del comando, ejecutar la l贸gica correspondiente
                 switch (cmd)
                 {
                     // cmd/ tp (id) (vector3)
@@ -116,7 +129,7 @@ public class ChatManager : NetworkBehaviour
                                     Vector3 vector = new Vector3(x, y, z);
 
                                     Debug.Log($"Jugador {parts[1]} a las coordenadas {parts[2]}");
-                                    CmdSendChatMessage($"<color=red>El admin {netId} ha teleportado al jugador {parts[1]} a las coordenadas {vector}</color>", netId);
+                                    CmdSendChatMessage($"<color=red>El admin {netId} ha teleportado al jugador {parts[1]} a las coordenadas {vector}</color>", player.namePlayer);
                                 }
                                 else
                                 {
@@ -131,11 +144,11 @@ public class ChatManager : NetworkBehaviour
                         {
                             // El segundo elemento es el argumento
                             string argument = parts[1];
-                            // L骻ica basada en el argumento
-                            // Ejemplo: Ejecutar una funci髇 con el argumento
+                            // L贸gica basada en el argumento
+                            // Ejemplo: Ejecutar una funci贸n con el argumento
                             Debug.Log($"Jugador baneado: {parts[1]}  Motivo: {parts[2]}");
                             LogSystem.Log($"{netId}", $"Baneado: {parts[1]}  Motivo: {parts[2]}", "Log.txt");
-                            CmdSendChatMessage($"<color=red>El admin {netId} ha baneado al jugador {parts[1]} por {parts[2]}</color>", netId);
+                            CmdSendChatMessage($"<color=red>El admin {netId} ha baneado al jugador {parts[1]} por {parts[2]}</color>", player.namePlayer);
                         }
                         break;
                     // cmd/ 
@@ -155,14 +168,14 @@ public class ChatManager : NetworkBehaviour
             else
             {
                 // Si no es un comando, simplemente muestra el mensaje en el chat
-                CmdSendChatMessage("<color=blue>Player " + netId + ":</color> " + message, netId);
+                CmdSendChatMessage("<b>" + player.namePlayer + ":</b> " + message, player.namePlayer);
             }
         }
         else
         {
             AddMessageToChat("<color=red>No puedes usar ese vocabulario.</color>");
-            
-            foreach(string word in palabrasEncontradas)
+
+            foreach (string word in palabrasEncontradas)
             {
                 words = words + " " + word;
             }
